@@ -38,14 +38,20 @@ CREATE TABLE rentmasterengine.clientes(
 CREATE TABLE rentmasterengine.alquileres(
 	id_alquiler INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 	id_cliente INT UNSIGNED NOT NULL,
+	id_equipo INT UNSIGNED NOT NULL,
 	fecha_salida DATE NOT NULL,
 	fecha_esperada DATE NOT NULL,
 	fecha_entrega_real DATE NOT NULL,
 	total_pagar DECIMAL(10,2) NOT NULL,
 	FOREIGN KEY (id_cliente) REFERENCES rentmasterengine.clientes(id_cliente)
 		ON UPDATE CASCADE
-		ON DELETE RESTRICT
+		ON DELETE RESTRICT,
+	FOREIGN KEY (id_equipo) REFERENCES rentmasterengine.equipos(id_equipo)
+	ON UPDATE CASCADE
+	ON DELETE RESTRICT
+	
 ) CHARSET = utf8mb4;
+
 
 # Creamos una tabla para realizar auditorias para ver los precios viejos
 CREATE TABLE rentmasterengine.auditorias(
@@ -62,7 +68,7 @@ CREATE TABLE rentmasterengine.auditorias(
 
 # CREACION DE STORED PROCEDURES
 
-# STORED PROCEDURE PARA REGISTRAR EQUIPOS
+# 1. STORED PROCEDURE PARA REGISTRAR EQUIPOS
 DROP PROCEDURE rentmasterengine.sp_registrar_equipo;
 
 DELIMITER //
@@ -108,7 +114,7 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_equipo(
 DELIMITER ;
 
 
-# STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
+# 2. STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
 DELIMITER //
 CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
 	IN i_nombre_equipo VARCHAR(100),
@@ -160,6 +166,48 @@ CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
 			SELECT 'Este producto no esta registrado en la base de datos';
 		
 		END IF;
+		
+	END //
+
+DELIMITER ;
+
+# STORED PROCEDURE PARA REGISTRAR LOS ALQUILERES DE LOS EQUIPOS
+DELIMITER //
+CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
+	IN i_id_alquiler INT UNSIGNED,
+	IN i_id_cliente INT UNSIGNED NOT NULL,
+	IN i_id_equipo INT UNSIGNED NOT NULL,
+	IN i_fecha_salida DATE NOT NULL,
+	IN i_fecha_esperada DATE NOT NULL,
+	IN i_fecha_entrega_real DATE NOT NULL,
+	IN i_total_pagar DECIMAL(10,2) NOT NULL
+)
+
+	BEGIN
+		
+		# USAREMOS UNA VARIABLE PARA REALIZAR EL CALCULO DEL PRECIO TOTAL
+		DECLARE precio_equipo DECIMAL(10,2);
+		
+		# BUSCAMOS EL PRECIO DEL EQUIPO QUE SE ESTA ALQUILANDO
+		SELECT precio_dia
+		INTO precio_equipo
+		FROM rentmasterengine.equipos
+		WHERE id_equipo = i_id_equipo;
+		
+		# REALIZAMOS EL CALCULO
+		# NO BASAREMOS QUE EL TIEMPO QUE OFRECE LA EMPRESA SON 20 DIAS
+		SET i_total_pagar = precio_equipo * 20;
+		
+		# REALIZAMOS EL INSERT
+		INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, fecha_salida, fecha_esperada,
+											 fecha_entrega_real, total_pagar)		 
+		VALUES (i_id_cliente, 
+			i_id_equipo, NOW(),
+			DATE_ADD(CURDATE(), INTERVAL 20 DAY),
+			DATE_ADD(CURDATE(), INTERVAL 30 DAY),
+			i_total_pagar);
+
+		
 		
 	END //
 
@@ -222,5 +270,44 @@ CREATE TRIGGER rentmasterengine.tg_registrar_auditoria
 DELIMITER ;
 
 
+/* BEFORE INSERT en Alquileres: Antes de registrar un alquiler, 
+ * el trigger debe verificar si el equipo tiene el estado 'Disponible'. 
+ * Si está en 'Mantenimiento' o 'Alquilado', debe lanzar un error y bloquear la operación.*/
+
+
+#DROP TRIGGER rentmasterengine.tg_registrar_alquiler;
+DELIMITER //
+CREATE TRIGGER rentmasterengine.tg_registrar_alquiler
+	BEFORE INSERT
+	ON rentmasterengine.alquileres
+	
+	FOR EACH ROW
+	
+	BEGIN
+		
+		DECLARE estado_equipo VARCHAR(50);
+		
+		
+		# BUSCAMOS EL ESTADO DEL EQUIPO POR EL ID DEL EQUIPO
+		SELECT estado INTO estado_equipo
+		FROM rentmasterengine.equipos
+		WHERE id_equipo = NEW.id_equipo;
+		
+		IF estado_equipo = 'DISPONIBLE' THEN
+			
+			UPDATE rentmasterengine.clientes 
+			SET saldo_deudor = NEW.total_pagar
+			WHERE id_cliente = NEW.id_cliente;
+			
+		ELSE
+		
+			SIGNAL STATEMENT '45000'
+			SET MSM = 'S'
+		
+		END IF;
+
+	END //
+	
+DELIMITER ;
 
 
