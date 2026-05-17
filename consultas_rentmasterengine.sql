@@ -41,11 +41,40 @@ CALL rentmasterengine.sp_actualizar_precio_equipo('generador eléctrico 100kva',
 CALL rentmasterengine.sp_actualizar_precio_equipo('excasssvadora caterpillar 320', 200.10);
 
 # INSERTAMOS INFORMACION DE CLIENTES PARA LA BD
-INSERT INTO rentmasterengine.clientes (nombre, cedula, saldo_deudor)
-VALUES 
 
+/*
+INSERT INTO rentmasterengine.clientes (nombre, cedula, saldo_deudor)
+VALUES ('Enmanuel Perez', '30767877', 0),
+   		('Juan Garcia', '1928377', 0),
+   		('Manolo Garcia', '123455', 0),
+   		('Carlos Mendoza', '15342891', 0),
+		('María Alejandra Torres', '18254763', 0),
+		('José Gregorio Rivas', '12984532', 0),
+		('Ana Karina Silva', '20411895', 0),
+		('Luis Eduardo Gómez', '16723419', 0),
+		('Carmen Elena Rondón', '14556238', 0),
+		('Francisco Javier Tobar', '22145789', 0),
+		('Diana Carolina Pérez', '19365412', 0),
+		('Manuel Alejandro Castillo', '11852963', 0),
+		('Patricia Valentina Ortega', '24789451', 0);
+	   
+*/
+
+SELECT * FROM rentmasterengine.clientes;
 SELECT * FROM rentmasterengine.equipos;
 SELECT * FROM rentmasterengine.auditorias;
+SELECT * FROM rentmasterengine.alquileres;
+
+
+START TRANSACTION;
+	INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, fecha_salida, fecha_esperada,
+											 fecha_entrega_real, total_pagar)		 
+	VALUES (1, 2, NOW(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 40 DAY), 200.00);
+ROLLBACK;
+COMMIT;
+
+
+
 
 # RECORDATORIO: COMENTAR LOS INSERTS LUEGO DE ESTRUCTURARLOS
 
