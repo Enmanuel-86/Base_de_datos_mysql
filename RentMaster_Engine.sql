@@ -70,8 +70,6 @@ CREATE TABLE rentmasterengine.auditorias(
 
 # 1. STORED PROCEDURE PARA REGISTRAR EQUIPOS
 #DROP PROCEDURE rentmasterengine.sp_registrar_equipo;
-
-
 DELIMITER //
 # CREAMOS EL STORED PROCEDURE CON LOS PARAMETROS NECESARIOS
 CREATE PROCEDURE rentmasterengine.sp_registrar_equipo(
@@ -115,11 +113,79 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_equipo(
 DELIMITER ;
 
 
-# 2. STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
+# 2 STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
+#DROP PROCEDURE rentmasterengine.sp_actualizar_precio_equipo;
 DELIMITER //
 CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
+	IN i_id_equipo VARCHAR(100),
+	IN i_precio_nuevo DECIMAL(10,2),
+	OUT o_respuesta VARCHAR(100)
+)
+
+	BEGIN
+		
+		DECLARE precio_anterior DECIMAL(10,2);
+		DECLARE existe_equipo INT DEFAULT 0;
+		
+		# BUSCAMOS EL PRECIO DEL PRODUCTO QUE TENGA EL MISMO NOMBRE
+		SELECT precio_dia
+		INTO precio_anterior
+		FROM rentmasterengine.equipos
+		WHERE id_equipo = i_id_equipo;
+		
+		# VERIFICAMOS SI EXISTE EL EQUIPO
+		SELECT COUNT(*)
+		INTO existe_equipo
+		FROM rentmasterengine.equipos
+		WHERE id_equipo = i_id_equipo;
+		
+		# SI EL EQUIPO EXISTE
+		IF existe_equipo <> 0 THEN
+			
+			# SI EL PRECIO ANTERIOR ES IGUAL AL NUEVO
+			IF precio_anterior = i_precio_nuevo THEN
+				
+					# SI ES IGUAL NO SE ACTUALIZA
+					SELECT 'LOS PRECIOS SON IGUALES'
+					INTO o_respuesta;
+					
+				ELSE
+					
+					# CASO CONTRARIO ACTUALIZAMOS EL PRECIO DEL EQUIPO
+					# BUSCANDOLO POR EL NOMBRE
+					UPDATE rentmasterengine.equipos
+					SET precio_dia = i_precio_nuevo
+					WHERE id_equipo = i_id_equipo;
+					
+					SELECT 'PRECIO ACTUALIZADO EXITOSAMENTE' 
+					INTO o_respuesta;
+				
+				END IF;
+			
+		
+		ELSE
+			
+			# EN CASO CONTRARIO NO HACER NADA
+			SELECT 'ESTE PRODUCTO NO EXISTE EN LA BASE DE DATOS'
+			INTO o_respuesta;
+		
+		END IF;
+		
+	END //
+
+DELIMITER ;
+
+
+
+
+
+# 2.1 STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
+#DROP PROCEDURE rentmasterengine.sp_actualizar_precio_equipo;
+DELIMITER //
+CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo_con_nombres(
 	IN i_nombre_equipo VARCHAR(100),
-	IN i_precio_nuevo DECIMAL(10,2)
+	IN i_precio_nuevo DECIMAL(10,2),
+	OUT o_respuesta VARCHAR(100)
 )
 
 	BEGIN
@@ -146,7 +212,8 @@ CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
 			IF precio_anterior = i_precio_nuevo THEN
 				
 					# SI ES IGUAL NO SE ACTUALIZA
-					SELECT 'Los precios son iguales';
+					SELECT 'LOS PRECIOS SON IGUALES'
+					INTO o_respuesta;
 					
 				ELSE
 					
@@ -156,24 +223,27 @@ CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
 					SET precio_dia = i_precio_nuevo
 					WHERE nombre = LOWER(i_nombre_equipo);
 					
-					SELECT 'Precio actualizado exitosamente';
-				
+					SELECT 'PRECIO ACTUALIZADO EXITOSAMENTE' 
+					INTO o_respuesta;
 				END IF;
 			
 		
 		ELSE
 			
 			# EN CASO CONTRARIO NO HACER NADA
-			SELECT 'Este producto no esta registrado en la base de datos';
-		
+			SELECT 'ESTE PRODUCTO NO EXISTE EN LA BASE DE DATOS'
+			INTO o_respuesta;
+			
 		END IF;
 		
 	END //
 
 DELIMITER ;
 
+
+
 # 3. STORED PROCEDURE PARA REGISTRAR LOS ALQUILERES DE LOS EQUIPOS
-DROP PROCEDURE rentmasterengine.sp_registrar_alquiler;
+#DROP PROCEDURE rentmasterengine.sp_registrar_alquiler;
 DELIMITER //
 CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
 	IN i_id_cliente INT UNSIGNED,
@@ -216,8 +286,7 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
 				DATE_ADD(CURDATE(), INTERVAL 30 DAY),
 				total_pagar);
 			
-			SELECT 'EQUIPO ALQUILADO EXITOSAMENTE'
-			INTO o_respuesta;
+			
 			
 		ELSE
 		
@@ -232,7 +301,8 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
 DELIMITER ;
 
 
-# STORE PRODECURE PARA ALQUILAR LOS EQUIPOS PERO CON NOMBRE
+# 3.1 STORE PRODECURE PARA ALQUILAR LOS EQUIPOS PERO CON NOMBRE
+#DROP PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres;
 DELIMITER //
 CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 	IN i_nombre_cliente VARCHAR(100),
@@ -242,11 +312,13 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 
 	BEGIN
 		
-		# USAREMOS UNA VARIABLE PARA REALIZAR EL CALCULO DEL PRECIO TOTAL
-		DECLARE precio_equipo DECIMAL(10,2);
-		DECLARE existencia_equipo INT DEFAULT 0;
-		DECLARE existencia_cliente INT DEFAULT 0;
-		DECLARE total_pagar DECIMAL(10,2);
+		
+		DECLARE precio_equipo DECIMAL(10,2); # USAREMOS UNA VARIABLE PARA REALIZAR EL CALCULO DEL PRECIO TOTAL
+		DECLARE existencia_equipo INT DEFAULT 0; # VARIABLE PARA VERIFICAR SI EXISTE
+		DECLARE existencia_cliente INT DEFAULT 0; # VARIABLE PARA VERIFICAR SI EXISTE
+		DECLARE var_id_cliente INT DEFAULT 0; # VARIABLE PARA GUARDAR EL ID
+		DECLARE var_id_equipo INT DEFAULT 0; # VARIABLE PARA GUARDAR EL ID
+		DECLARE total_pagar DECIMAL(10,2); # VARIABLES PARA EL TOTAL A PAGAR
 		
 		# BUSCAMOS SI EXISTE EL EQUIPO
 		SELECT COUNT(*)
@@ -260,6 +332,7 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 		FROM rentmasterengine.clientes
 		WHERE nombre = i_nombre_cliente;
 		
+		
 		# VERFICAMOS SI EXISTE LA PERSONA/CLIENTE
 		IF existencia_cliente <> 0 THEN 
 		
@@ -270,7 +343,20 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 				SELECT precio_dia
 				INTO precio_equipo
 				FROM rentmasterengine.equipos
-				WHERE id_equipo = i_id_equipo;
+				WHERE nombre = i_nombre_equipo;
+				
+				# BUSCAMOS EL ID DEL EQUIPO POR SU NOMBRE
+				SELECT id_equipo 
+				INTO var_id_equipo
+				FROM rentmasterengine.equipos
+				WHERE nombre = i_nombre_equipo;
+				
+				# BUSCAMOS EL ID DEL CLIENTE POR SU NOMBRE
+				SELECT id_cliente
+				INTO var_id_cliente
+				FROM rentmasterengine.clientes
+				WHERE nombre = i_nombre_cliente;
+								
 				
 				# REALIZAMOS EL CALCULO
 				# NO BASAREMOS QUE EL TIEMPO QUE OFRECE LA EMPRESA SON 20 DIAS
@@ -280,11 +366,15 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 				INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, 
 														fecha_salida, fecha_esperada,
 													    fecha_entrega_real, total_pagar)		 
-				VALUES (i_id_cliente, 
-					i_id_equipo, NOW(),
+				VALUES (var_id_cliente, 
+					var_id_equipo, 
+					NOW(),
 					DATE_ADD(CURDATE(), INTERVAL 20 DAY),
 					DATE_ADD(CURDATE(), INTERVAL 30 DAY),
 					total_pagar);
+				
+				SELECT 'EQUIPO ALQUILADO EXITOSAMENTE'
+				INTO o_respuesta;
 				
 			ELSE
 			
@@ -341,9 +431,7 @@ DELIMITER ;
 
 
 # TRIGGER PARA REGISTRAR AUDITORIA
-
-USE rentmasterengine;
-
+#DROP TRIGGER rentmasterengine.tg_registrar_auditoria;
 DELIMITER //
 CREATE TRIGGER rentmasterengine.tg_registrar_auditoria
 	BEFORE UPDATE
@@ -352,12 +440,19 @@ CREATE TRIGGER rentmasterengine.tg_registrar_auditoria
 	
 	BEGIN
 		
-		# REGISTRAMOS CADA VEZ QUE SE CAMBIE LE PRECIO
-		# ESTO SE DISPARA DESPUES DE USAR EL STORED PROCEDURE sp_actualizar_precio_equipo
-		# EN CASO DE CUMPLIR LA CONDICION
-		INSERT INTO rentmasterengine.auditorias (id_equipo, fecha, precio_anterior)
-		VALUES (OLD.id_equipo, NOW(), OLD.precio_dia);
-				
+		
+		IF OLD.precio_dia <> NEW.precio_dia	THEN
+		
+			# REGISTRAMOS CADA VEZ QUE SE CAMBIE LE PRECIO
+			# ESTO SE DISPARA DESPUES DE USAR EL STORED PROCEDURE sp_actualizar_precio_equipo
+			# EN CASO DE CUMPLIR LA CONDICION
+			INSERT INTO rentmasterengine.auditorias (id_equipo, fecha, precio_anterior)
+			VALUES (OLD.id_equipo, NOW(), OLD.precio_dia);
+					
+			
+		END IF;
+		
+		
 	END //
 	
 DELIMITER ;

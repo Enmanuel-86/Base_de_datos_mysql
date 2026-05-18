@@ -65,7 +65,12 @@ SELECT * FROM rentmasterengine.equipos;
 SELECT * FROM rentmasterengine.auditorias;
 SELECT * FROM rentmasterengine.alquileres;
 
-CALL rentmasterengine.sp_registrar_alquiler(3,1);
+CALL rentmasterengine.sp_actualizar_precio_equipo(1,500.50, @respuesta);
+SELECT @respuesta;
+
+CALL rentmasterengine.sp_registrar_alquiler(3,6, @respuesta);
+CALL rentmasterengine.sp_registrar_alquiler_con_nombres('Carlos Mendoza','montacargas toyota 2.5 ton', @respuesta);
+SELECT @respuesta;
 
 
 
