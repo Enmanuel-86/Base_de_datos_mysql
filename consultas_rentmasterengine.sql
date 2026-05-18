@@ -65,13 +65,7 @@ SELECT * FROM rentmasterengine.equipos;
 SELECT * FROM rentmasterengine.auditorias;
 SELECT * FROM rentmasterengine.alquileres;
 
-
-START TRANSACTION;
-	INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, fecha_salida, fecha_esperada,
-											 fecha_entrega_real, total_pagar)		 
-	VALUES (1, 2, NOW(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 40 DAY), 200.00);
-ROLLBACK;
-COMMIT;
+CALL rentmasterengine.sp_registrar_alquiler(3,1);
 
 
 
