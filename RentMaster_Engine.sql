@@ -69,7 +69,8 @@ CREATE TABLE rentmasterengine.auditorias(
 # CREACION DE STORED PROCEDURES
 
 # 1. STORED PROCEDURE PARA REGISTRAR EQUIPOS
-DROP PROCEDURE rentmasterengine.sp_registrar_equipo;
+#DROP PROCEDURE rentmasterengine.sp_registrar_equipo;
+
 
 DELIMITER //
 # CREAMOS EL STORED PROCEDURE CON LOS PARAMETROS NECESARIOS
@@ -171,42 +172,134 @@ CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
 
 DELIMITER ;
 
-# STORED PROCEDURE PARA REGISTRAR LOS ALQUILERES DE LOS EQUIPOS
+# 3. STORED PROCEDURE PARA REGISTRAR LOS ALQUILERES DE LOS EQUIPOS
+DROP PROCEDURE rentmasterengine.sp_registrar_alquiler;
 DELIMITER //
 CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
-	IN i_id_alquiler INT UNSIGNED,
-	IN i_id_cliente INT UNSIGNED NOT NULL,
-	IN i_id_equipo INT UNSIGNED NOT NULL,
-	IN i_fecha_salida DATE NOT NULL,
-	IN i_fecha_esperada DATE NOT NULL,
-	IN i_fecha_entrega_real DATE NOT NULL,
-	IN i_total_pagar DECIMAL(10,2) NOT NULL
+	IN i_id_cliente INT UNSIGNED,
+	IN i_id_equipo INT UNSIGNED,
+	OUT o_respuesta VARCHAR(100)
 )
 
 	BEGIN
 		
 		# USAREMOS UNA VARIABLE PARA REALIZAR EL CALCULO DEL PRECIO TOTAL
 		DECLARE precio_equipo DECIMAL(10,2);
+		DECLARE existencia_equipo INT DEFAULT 0;
+		DECLARE total_pagar DECIMAL(10,2);
 		
-		# BUSCAMOS EL PRECIO DEL EQUIPO QUE SE ESTA ALQUILANDO
-		SELECT precio_dia
-		INTO precio_equipo
+		SELECT COUNT(*)
+		INTO existencia_equipo
 		FROM rentmasterengine.equipos
 		WHERE id_equipo = i_id_equipo;
 		
-		# REALIZAMOS EL CALCULO
-		# NO BASAREMOS QUE EL TIEMPO QUE OFRECE LA EMPRESA SON 20 DIAS
-		SET i_total_pagar = precio_equipo * 20;
 		
-		# REALIZAMOS EL INSERT
-		INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, fecha_salida, fecha_esperada,
-											 fecha_entrega_real, total_pagar)		 
-		VALUES (i_id_cliente, 
-			i_id_equipo, NOW(),
-			DATE_ADD(CURDATE(), INTERVAL 20 DAY),
-			DATE_ADD(CURDATE(), INTERVAL 30 DAY),
-			i_total_pagar);
+		IF existencia_equipo <> 0 THEN 
+		
+			# BUSCAMOS EL PRECIO DEL EQUIPO QUE SE ESTA ALQUILANDO
+			SELECT precio_dia
+			INTO precio_equipo
+			FROM rentmasterengine.equipos
+			WHERE id_equipo = i_id_equipo;
+			
+			# REALIZAMOS EL CALCULO
+			# NO BASAREMOS QUE EL TIEMPO QUE OFRECE LA EMPRESA SON 20 DIAS
+			SET total_pagar = precio_equipo * 20;
+			
+			# REALIZAMOS EL INSERT
+			INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, 
+													fecha_salida, fecha_esperada,
+												    fecha_entrega_real, total_pagar)		 
+			VALUES (i_id_cliente, 
+				i_id_equipo, NOW(),
+				DATE_ADD(CURDATE(), INTERVAL 20 DAY),
+				DATE_ADD(CURDATE(), INTERVAL 30 DAY),
+				total_pagar);
+			
+			SELECT 'EQUIPO ALQUILADO EXITOSAMENTE'
+			INTO o_respuesta;
+			
+		ELSE
+		
+			SELECT 'ESTE EQUIPO NO EXITE PARA SER ALQUILADO'
+			INTO o_respuesta;
 
+		END IF;
+		
+		
+	END //
+
+DELIMITER ;
+
+
+# STORE PRODECURE PARA ALQUILAR LOS EQUIPOS PERO CON NOMBRE
+DELIMITER //
+CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
+	IN i_nombre_cliente VARCHAR(100),
+	IN i_nombre_equipo VARCHAR(100),
+	OUT o_respuesta VARCHAR(100)
+)
+
+	BEGIN
+		
+		# USAREMOS UNA VARIABLE PARA REALIZAR EL CALCULO DEL PRECIO TOTAL
+		DECLARE precio_equipo DECIMAL(10,2);
+		DECLARE existencia_equipo INT DEFAULT 0;
+		DECLARE existencia_cliente INT DEFAULT 0;
+		DECLARE total_pagar DECIMAL(10,2);
+		
+		# BUSCAMOS SI EXISTE EL EQUIPO
+		SELECT COUNT(*)
+		INTO existencia_equipo
+		FROM rentmasterengine.equipos
+		WHERE nombre = i_nombre_equipo;
+		
+		# BUSCAMOS SI EXISTE LA PERSONA
+		SELECT COUNT(*)
+		INTO existencia_cliente
+		FROM rentmasterengine.clientes
+		WHERE nombre = i_nombre_cliente;
+		
+		# VERFICAMOS SI EXISTE LA PERSONA/CLIENTE
+		IF existencia_cliente <> 0 THEN 
+		
+			# VERIFICAMOS QUE EXISTA EL EQUIPO
+			IF existencia_equipo <> 0 THEN 
+		
+				# BUSCAMOS EL PRECIO DEL EQUIPO QUE SE ESTA ALQUILANDO
+				SELECT precio_dia
+				INTO precio_equipo
+				FROM rentmasterengine.equipos
+				WHERE id_equipo = i_id_equipo;
+				
+				# REALIZAMOS EL CALCULO
+				# NO BASAREMOS QUE EL TIEMPO QUE OFRECE LA EMPRESA SON 20 DIAS
+				SET total_pagar = precio_equipo * 20;
+				
+				# REALIZAMOS EL INSERT
+				INSERT INTO rentmasterengine.alquileres (id_cliente, id_equipo, 
+														fecha_salida, fecha_esperada,
+													    fecha_entrega_real, total_pagar)		 
+				VALUES (i_id_cliente, 
+					i_id_equipo, NOW(),
+					DATE_ADD(CURDATE(), INTERVAL 20 DAY),
+					DATE_ADD(CURDATE(), INTERVAL 30 DAY),
+					total_pagar);
+				
+			ELSE
+			
+				SELECT 'ESTE PRODUCTO NO EXITE PARA SER ALQUILADO'
+				INTO o_respuesta;
+	
+			END IF;
+			
+		
+		ELSE
+		
+			SELECT 'ESTAS PERSONA NO EXISTE PARA REALIZAR EL REGISTRO'
+			INTO o_respuesta;
+		
+		END IF;
 		
 		
 	END //
@@ -275,7 +368,8 @@ DELIMITER ;
  * Si está en 'Mantenimiento' o 'Alquilado', debe lanzar un error y bloquear la operación.*/
 
 
-#DROP TRIGGER rentmasterengine.tg_registrar_alquiler;
+
+#sDROP TRIGGER rentmasterengine.tg_registrar_alquiler;
 DELIMITER //
 CREATE TRIGGER rentmasterengine.tg_registrar_alquiler
 	BEFORE INSERT
@@ -293,21 +387,31 @@ CREATE TRIGGER rentmasterengine.tg_registrar_alquiler
 		FROM rentmasterengine.equipos
 		WHERE id_equipo = NEW.id_equipo;
 		
+		
 		IF estado_equipo = 'DISPONIBLE' THEN
 			
+			# ACTUALIZAMOS LA DEUDA DEL CLIENTE DE 0 AL TOTAL A PAGAR NUEVO
 			UPDATE rentmasterengine.clientes 
 			SET saldo_deudor = NEW.total_pagar
 			WHERE id_cliente = NEW.id_cliente;
 			
+			# ACTUALIZAMOS EL EQUIPO DE DISPONIBLE A ALQUILADO
+			UPDATE rentmasterengine.equipos 
+			SET estado = 'ALQUILADO'
+			WHERE id_equipo = NEW.id_equipo;
+			
+			
+			
 		ELSE
 		
-			SIGNAL STATEMENT '45000'
-			SET MSM = 'S'
+        	SIGNAL SQLSTATE '45000'
+        	SET MESSAGE_TEXT = 'Operación cancelada: El producto no está disponible.';
+			
 		
 		END IF;
 
 	END //
 	
 DELIMITER ;
-
+        	
 
