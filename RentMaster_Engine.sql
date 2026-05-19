@@ -16,6 +16,8 @@ CREATE DATABASE IF NOT EXISTS rentmasterengine;
 #DROP DATABASE rentmasterengine;
 USE rentmasterengine;
 
+#DROP DATABASE rentmasterengine;
+
 # Creamos la tabla en donde se almacenan los equipos
 CREATE TABLE rentmasterengine.equipos(
 	id_equipo INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -64,7 +66,42 @@ CREATE TABLE rentmasterengine.auditorias(
 		ON DELETE RESTRICT
 );
  
+# CREACION DE VIEWS 
 
+# 1. VIEW DE ALQUILERES
+CREATE VIEW rentmasterengine.vw_alquileres_de_equipos AS
+	SELECT a.id_alquiler, c.nombre AS Cliente, e.nombre AS Equipo, e.categoria,
+		   e.precio_dia AS Precio_del_equipo, e.estado, a.fecha_salida, a.fecha_esperada,
+		   a.fecha_entrega_real, a.total_pagar
+	FROM rentmasterengine.alquileres AS a
+	INNER JOIN rentmasterengine.equipos AS e 
+		ON e.id_equipo = a.id_equipo # COMPARAMOS EL ID DEL EQUIPO DE LA TABLA EQUIPO Y ALQUILES
+	INNER JOIN rentmasterengine.clientes AS c
+		ON c.id_cliente = a.id_cliente; # COMPARAMOS EL ID DEL CLIENTE DE LA TABLA CLIENTES Y ALQUILES
+
+# 2. VIEW DE ALQUILERES DE EQUIPO ALQUILADOS Y NO ALQUILADOS
+CREATE VIEW rentmasterengine.vw_equipos_alquilados_y_no_alquilados AS
+	SELECT a.id_alquiler, c.nombre AS Cliente, e.nombre AS Equipo, e.categoria,
+		   e.precio_dia AS Precio_del_equipo, e.estado, a.fecha_salida, a.fecha_esperada,
+		   a.fecha_entrega_real, a.total_pagar
+	FROM rentmasterengine.alquileres AS a
+	INNER JOIN rentmasterengine.clientes AS c
+		ON c.id_cliente = a.id_cliente # COMPARAMOS EL ID DEL CLIENTE DE LA TABLA CLIENTES Y ALQUILES
+	RIGHT JOIN rentmasterengine.equipos AS e 
+		ON e.id_equipo = a.id_equipo # COMPARAMOS EL ID DEL EQUIPO DE LA TABLA EQUIPO Y ALQUILES
+	ORDER BY c.nombre DESC;
+
+# 3. VIEW DE EQUIPOS EN ESTADO DISPONIBLE
+CREATE VIEW rentmasterengine.vw_equipos_disponibles AS
+	SELECT * FROM rentmasterengine.equipos
+	WHERE estado = 'DISPONIBLE';
+
+# 4. VIEW DE EQUIPOS EN ESTADO ALQUILADOS
+CREATE VIEW rentmasterengine.vw_equipos_alquilados AS
+	SELECT * FROM rentmasterengine.equipos
+	WHERE estado = 'ALQUILADO';
+		
+# /////////////////////////////////////////////////////////////
 
 # CREACION DE STORED PROCEDURES
 
@@ -76,21 +113,24 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_equipo(
 	IN i_nombre_equipo VARCHAR(100),
 	IN i_categoria VARCHAR(100),
 	IN i_precio_dia DECIMAL(10,2),
-	IN i_estado VARCHAR(50)
+	IN i_estado VARCHAR(50),
+	OUT o_respuesta VARCHAR(100)
 )
 
 	# COMENZAMOS
 	BEGIN
 		
+		#VARIABLE PARA VER SI EXISTE EL EQUIPO
 		DECLARE existe_equipo INT DEFAULT 0;
 		
+		# VEMOS SI EL QUIPO EXISTE
 		SELECT COUNT(*) INTO existe_equipo
 		FROM rentmasterengine.equipos
 		WHERE nombre = i_nombre_equipo;
 		
 		IF existe_equipo <> 0 THEN
 			
-			SELECT 'Este equipo ya esta registrado' AS respuesta;
+			SELECT 'ESTE EQUIPO YA ESTA REGISTRADO' INTO o_respuesta;
 			
 		ELSE
 		
@@ -99,7 +139,7 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_equipo(
 				INSERT INTO rentmasterengine.equipos (nombre, categoria, estado, precio_dia )
 				VALUES (i_nombre_equipo, i_categoria, i_estado, i_precio_dia);
 				
-				SELECT 'Equipo registrado con exito' AS respuesta;
+				SELECT 'EQUIPO REGISTRADO EXITOSAMENTE' INTO o_respuesta;
 				
 			COMMIT;
 			
@@ -116,7 +156,7 @@ DELIMITER ;
 # 2 STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
 #DROP PROCEDURE rentmasterengine.sp_actualizar_precio_equipo;
 DELIMITER //
-CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
+CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo_por_id(
 	IN i_id_equipo VARCHAR(100),
 	IN i_precio_nuevo DECIMAL(10,2),
 	OUT o_respuesta VARCHAR(100)
@@ -124,6 +164,7 @@ CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo(
 
 	BEGIN
 		
+		# VARIABLES 
 		DECLARE precio_anterior DECIMAL(10,2);
 		DECLARE existe_equipo INT DEFAULT 0;
 		
@@ -182,14 +223,14 @@ DELIMITER ;
 # 2.1 STORED PROCEDURE PARA ACTUALIZAR LOS PRECIOS DE LOS EQUIPOS
 #DROP PROCEDURE rentmasterengine.sp_actualizar_precio_equipo;
 DELIMITER //
-CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo_con_nombres(
+CREATE PROCEDURE rentmasterengine.sp_actualizar_precio_equipo_por_nombre(
 	IN i_nombre_equipo VARCHAR(100),
 	IN i_precio_nuevo DECIMAL(10,2),
 	OUT o_respuesta VARCHAR(100)
 )
 
 	BEGIN
-		
+		# VARIABLES
 		DECLARE precio_anterior DECIMAL(10,2);
 		DECLARE existe_equipo INT DEFAULT 0;
 		
@@ -243,9 +284,9 @@ DELIMITER ;
 
 
 # 3. STORED PROCEDURE PARA REGISTRAR LOS ALQUILERES DE LOS EQUIPOS
-#DROP PROCEDURE rentmasterengine.sp_registrar_alquiler;
+#DROP PROCEDURE rentmasterengine.sp_registrar_alquiler_por_id;
 DELIMITER //
-CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
+CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_por_id(
 	IN i_id_cliente INT UNSIGNED,
 	IN i_id_equipo INT UNSIGNED,
 	OUT o_respuesta VARCHAR(100)
@@ -286,6 +327,9 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler(
 				DATE_ADD(CURDATE(), INTERVAL 30 DAY),
 				total_pagar);
 			
+			SELECT 'EQUIPO ALQUILADO EXITOSAMENTE'
+			INTO o_respuesta;
+				
 			
 			
 		ELSE
@@ -304,7 +348,7 @@ DELIMITER ;
 # 3.1 STORE PRODECURE PARA ALQUILAR LOS EQUIPOS PERO CON NOMBRE
 #DROP PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres;
 DELIMITER //
-CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
+CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_por_nombre(
 	IN i_nombre_cliente VARCHAR(100),
 	IN i_nombre_equipo VARCHAR(100),
 	OUT o_respuesta VARCHAR(100)
@@ -312,7 +356,7 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 
 	BEGIN
 		
-		
+		# VARIABLES
 		DECLARE precio_equipo DECIMAL(10,2); # USAREMOS UNA VARIABLE PARA REALIZAR EL CALCULO DEL PRECIO TOTAL
 		DECLARE existencia_equipo INT DEFAULT 0; # VARIABLE PARA VERIFICAR SI EXISTE
 		DECLARE existencia_cliente INT DEFAULT 0; # VARIABLE PARA VERIFICAR SI EXISTE
@@ -396,6 +440,9 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_con_nombres(
 
 DELIMITER ;
 
+
+
+# /////////////////////////////////////////////////////////////
 
 
 # CREACION DE TRIGGER CON BEFORE
