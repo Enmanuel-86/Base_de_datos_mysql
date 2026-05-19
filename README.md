@@ -15,4 +15,9 @@ Esta base de datos es un proyecto que le pedi a la inteligencia artificial ***Ge
 ## Instrucciones para ejecutar la base de datos :rocket:
 
 1. Instalas [XAMPP](https://www.apachefriends.org/es/index.html).
-2. Instalas un SIstema Gestor de Bases de Datos (SGBD)
+
+2. Instalas un SIstema Gestor de Bases de Datos (SGBD) de su preferencia como: [DBeaver](https://dbeaver.io/) o [MySQLWorkBrench](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.mysql.com/products/workbench/&ved=2ahUKEwij_9zHkMWUAxWDI0QIHVZSBvAQFnoECBgQAQ&usg=AOvVaw2uxalXa7lbSMzqJpmDW7mw).
+
+3. Luego de instalar XAMPP lo ejecutas e inicias el servicio de MySQL.
+
+4. En el SGBD que instalo, ejecutas los scripts y realiza las consultas o modificaciones que desee.
