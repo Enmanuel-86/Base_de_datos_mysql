@@ -79,6 +79,7 @@ CREATE VIEW rentmasterengine.vw_alquileres_de_equipos AS
 	INNER JOIN rentmasterengine.clientes AS c
 		ON c.id_cliente = a.id_cliente; # COMPARAMOS EL ID DEL CLIENTE DE LA TABLA CLIENTES Y ALQUILES
 
+		
 # 2. VIEW DE ALQUILERES DE EQUIPO ALQUILADOS Y NO ALQUILADOS
 CREATE VIEW rentmasterengine.vw_equipos_alquilados_y_no_alquilados AS
 	SELECT a.id_alquiler, c.nombre AS Cliente, e.nombre AS Equipo, e.categoria,
@@ -91,15 +92,34 @@ CREATE VIEW rentmasterengine.vw_equipos_alquilados_y_no_alquilados AS
 		ON e.id_equipo = a.id_equipo # COMPARAMOS EL ID DEL EQUIPO DE LA TABLA EQUIPO Y ALQUILES
 	ORDER BY c.nombre DESC;
 
+
 # 3. VIEW DE EQUIPOS EN ESTADO DISPONIBLE
 CREATE VIEW rentmasterengine.vw_equipos_disponibles AS
 	SELECT * FROM rentmasterengine.equipos
 	WHERE estado = 'DISPONIBLE';
 
+
 # 4. VIEW DE EQUIPOS EN ESTADO ALQUILADOS
 CREATE VIEW rentmasterengine.vw_equipos_alquilados AS
 	SELECT * FROM rentmasterengine.equipos
 	WHERE estado = 'ALQUILADO';
+
+# 5. VIEW DE EQUIPOS EN ESTADO DE MANTENIMIENTO
+CREATE VIEW rentmasterengine.vw_equipos_en_mantenimiento AS
+	SELECT * FROM rentmasterengine.equipos
+	WHERE estado = 'MANTENIMIENTO';
+
+# 6. VIEW PARA VER LAS AUDITORIAS
+CREATE VIEW rentmasterengine.vw_auditoria_de_equipos AS
+	SELECT a.id_auditoria, e.nombre AS Equipo, e.categoria, e.precio_dia,
+		   a.precio_anterior, a.fecha
+	FROM rentmasterengine.auditorias AS a
+	INNER JOIN rentmasterengine.equipos AS e 
+		ON e.id_equipo = a.id_equipo;
+
+
+
+
 		
 # /////////////////////////////////////////////////////////////
 
