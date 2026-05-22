@@ -28,7 +28,8 @@ CALL rentmasterengine.sp_registrar_equipo('Rodillo Compactador Dynapac', 'Pavime
 CALL rentmasterengine.sp_registrar_equipo('Torre de Iluminación LED', 'Iluminación', 45.00, 'Disponible', @respuesta);
 CALL rentmasterengine.sp_registrar_equipo('Martillo Hidráulico para Mini', 'Accesorios', 85.00, 'Mantenimiento', @respuesta);
 CALL rentmasterengine.sp_registrar_equipo('Montacargas Toyota 2.5 Ton', 'Carga', 110.00, 'Disponible', @respuesta);
-*/
+
+**/
 
 # UPDATE DE LOS PRECIOS DE LOS EQUIPOS CON STORE PROCEDURE
 # rentmasterengine.sp_actualizar_precio_equipo( nombre_equipo, precio_nuevo)
@@ -70,12 +71,24 @@ SELECT @respuesta;
 
 CALL rentmasterengine.sp_registrar_alquiler_por_id(3,6, @respuesta);
 CALL rentmasterengine.sp_registrar_alquiler_por_id(1,2, @respuesta);
+CALL rentmasterengine.sp_registrar_alquiler_por_id(1,2, @respuesta);
 SELECT @respuesta;
 
+TRUNCATE rentmasterengine.equipos;
+TRUNCATE rentmasterengine.alquileres;
+TRUNCATE rentmasterengine.auditorias;
 
 
 
 # RECORDATORIO: COMENTAR LOS INSERTS LUEGO DE ESTRUCTURARLOS
 
+START TRANSACTION;
+	CALL rentmasterengine.sp_pagar_alquiler_por_id_alquiler_y_monto(1, 1300 , @respuesta );
+	SELECT @respuesta;
 
+ROLLBACK;
+
+COMMIT;
+
+SELECT * FROM rentmasterengine.alquileres;
 
