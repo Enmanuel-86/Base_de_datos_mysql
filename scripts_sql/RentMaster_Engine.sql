@@ -36,6 +36,7 @@ CREATE TABLE rentmasterengine.clientes(
 	
 ) CHARSET = utf8mb4;
 
+
 # Creamos la tabla que contiene los alquileres de los equipos
 CREATE TABLE rentmasterengine.alquileres(
 	id_alquiler INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -44,7 +45,9 @@ CREATE TABLE rentmasterengine.alquileres(
 	fecha_salida DATE NOT NULL,
 	fecha_esperada DATE NOT NULL,
 	fecha_entrega_real DATE NOT NULL,
+	fecha_de_pago DATE,
 	total_pagar DECIMAL(10,2) NOT NULL,
+	estado_pago VARCHAR(50) NOT NULL DEFAULT 'NO PAGADO',
 	FOREIGN KEY (id_cliente) REFERENCES rentmasterengine.clientes(id_cliente)
 		ON UPDATE CASCADE
 		ON DELETE RESTRICT,
@@ -117,6 +120,15 @@ CREATE VIEW rentmasterengine.vw_auditoria_de_equipos AS
 	INNER JOIN rentmasterengine.equipos AS e 
 		ON e.id_equipo = a.id_equipo;
 
+
+# 7. VIEW PARA VER EQUIPOS AUDITADOS Y NO AUDITADOS
+CREATE VIEW rentmasterengine.vw_equipos_auditados_y_no_auditados AS
+	SELECT a.id_auditoria, e.id_equipo, e.nombre AS Equipo, e.categoria, e.precio_dia,
+		   a.precio_anterior, a.fecha
+	FROM rentmasterengine.auditorias AS a
+	RIGHT JOIN rentmasterengine.equipos AS e 
+		ON e.id_equipo = a.id_equipo
+	ORDER BY e.id_equipo ASC;
 
 
 
@@ -460,6 +472,102 @@ CREATE PROCEDURE rentmasterengine.sp_registrar_alquiler_por_nombre(
 
 DELIMITER ;
 
+
+# 4 STORED PROCEDURE PARA PAGAR EL ALQUILER
+#DROP PROCEDURE rentmasterengine.sp_pagar_alquiler_por_id_alquiler_y_monto;
+DELIMITER //
+CREATE PROCEDURE rentmasterengine.sp_pagar_alquiler_por_id_alquiler_y_monto( 
+	IN i_id_alquiler INT UNSIGNED,
+	IN i_monto_pagar DECIMAL(10,2),
+	OUT o_respuesta VARCHAR(60)
+)
+
+	BEGIN
+		
+		# VARIABLES 
+		DECLARE existe_alquiler INT DEFAULT 0; # VARIABLE PARA VER SI EL EQUIPO EXISTE EN LA BASE DE DATOS
+		DECLARE var_id_cliente INT UNSIGNED;
+		DECLARE var_id_equipo INT UNSIGNED;
+		DECLARE deuda DECIMAl(10,2); # VARIABLE PARA SABER EL MONTO DE X EQUIPO
+		
+		
+		
+		# Manejador de errores
+		DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			
+			ROLLBACK;
+			SET o_respuesta = 'LA OPERACION SIN EXITO';
+		END;
+		
+		
+		
+		START TRANSACTION;
+		
+		# CONSULTA PARA VER SI EL EQUIPO EXISTE
+		SELECT COUNT(*)
+		INTO existe_alquiler
+		FROM rentmasterengine.alquileres
+		WHERE id_alquiler = i_id_alquiler;
+		
+		
+		
+		IF existe_alquiler <> 0 THEN
+		
+			# CONSULTA PARA VER LA DEUDA 
+			SELECT a.id_equipo, a.id_cliente, c.saldo_deudor
+			INTO var_id_equipo, var_id_cliente ,deuda
+			FROM rentmasterengine.alquileres AS a
+			INNER JOIN rentmasterengine.clientes AS c
+			ON c.id_cliente = a.id_cliente
+			WHERE id_alquiler = i_id_alquiler;
+			
+			
+			IF i_monto_pagar > deuda THEN 
+			
+				SELECT CONCAT('SU DEUDA ES DE: ', deuda, ', NO PUEDE PAGAR UNA CANTIDAD SUPERIOR A SU DEUDA')
+				INTO o_respuesta;
+				
+				ROLLBACK ;
+				
+			ELSEIF i_monto_pagar = deuda THEN
+				
+				UPDATE rentmasterengine.alquileres
+				SET fecha_de_pago = NOW(),
+					total_pagar = 0.00,
+					estado_pago = 'PAGADO'
+				WHERE id_alquiler = i_id_alquiler;
+				
+				UPDATE rentmasterengine.clientes
+				SET saldo_deudor = 0.00
+				WHERE id_cliente = var_id_cliente;
+				
+				SET o_respuesta = 'TRANSACCION EXITOSA';
+				
+				COMMIT;
+					
+			ELSEIF i_monto_pagar < deuda THEN
+				
+				SELECT CONCAT('SU DEUDA ES DE: ', deuda, ', SU PAGO ES MENOR A LA DEUDA ')
+				INTO  o_respuesta;
+			
+				ROLLBACK;
+			
+			END IF;
+		
+		ELSE
+		
+			SELECT 'ESTE ALQUILER NO EXISTE'
+			INTO o_respuesta;
+			
+			ROLLBACK;
+			
+		END IF;
+		
+	END //
+
+
+DELIMITER ; 
 
 
 # /////////////////////////////////////////////////////////////
