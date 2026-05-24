@@ -541,11 +541,6 @@ CREATE PROCEDURE rentmasterengine.sp_pagar_alquiler_por_id_alquiler_y_monto(
 				SET saldo_deudor = (saldo_deudor - deuda_alquiler)
 				WHERE id_cliente = var_id_cliente;
 				
-				# ACTUALIZAMOS EL ESTADO DEL EQUIPO
-				UPDATE rentmasterengine.equipos
-				SET estado = 'DISPONIBLE'
-				WHERE id_equipo = var_id_equipo; 
-				
 				SET o_respuesta = 'TRANSACCION EXITOSA';
 				
 				COMMIT;
@@ -570,6 +565,86 @@ CREATE PROCEDURE rentmasterengine.sp_pagar_alquiler_por_id_alquiler_y_monto(
 
 
 DELIMITER ; 
+
+
+# STORED PROCEDURE PARA CANCELAR TODOS LOS ALQUIRES DE X CLIENTE
+DELIMITER //
+CREATE PROCEDURE rentmasterengine.sp_cancelar_alquileres_por_cliente_id_y_monto(
+	IN i_id_cliente INT UNSIGNED,
+	IN i_monto_pagar DECIMAL(10,2),
+	OUT o_respuesta VARCHAR(50)
+)
+
+	BEGIN
+		
+		DECLARE existe_cliente INT DEFAULT 0;
+		DECLARE existe_alquiler INT DEFAULT 0;
+		DECLARE total_pagar_alquileres DECIMAL(10,2);
+		
+		# MANEJADOR DE ERRORES
+		DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			ROLLBACK;
+			SET o_respuesta = 'PROCESO SIN EXISTO: OCURRIO UN ERROR';
+		END;
+		
+		START TRANSACTION;
+		
+			# COMPROBAMOS LA EXISTECIA DEL CLIENTE
+			SELECT COUNT(*)
+			INTO existe_cliente
+			FROM rentmasterengine.clientes
+			WHERE id_cliente = i_id_cliente;
+			
+			# COMPROBAMOS LA EXISTENCIA LOS ALQUILERES
+			SELECT COUNT(*), SUM(total_pagar)
+			INTO existe_alquiler, total_pagar_alquileres
+			FROM rentmasterengine.alquileres
+			WHERE id_cliente = i_id_cliente;
+			
+			
+			IF existe_cliente <> 0 AND existe_alquiler <> 0 THEN
+				
+				IF i_monto_pagar = total_pagar_alquileres THEN
+					
+					# ACTUALIZAMOS EL ESTADO DEL ALQUI
+					UPDATE rentmasterengine.alquileres
+					SET fecha_de_pago = NOW(),
+					    total_pagar = 0.00,
+					    estado_pago = 'PAGADO'
+					WHERE id_cliente = i_id_cliente;
+					
+					# ACTUALIZAMOS EL SALDO DEL CLIENTE
+					UPDATE rentmasterengine.clientes
+					SET saldo_deudor = 0.00
+					WHERE id_cliente = i_id_cliente;
+					
+					SET o_respuesta = 'DEUDA PAGADA CON EXITO';
+				
+					COMMIT;
+					
+				ELSEIF i_monto_pagar > total_pagar_alquileres THEN
+					
+					SET o_respuesta = 'EL MONTO QUE ESTA PAGANDO ES MAYOR, NO TENEMOS SISTEMA DE CREDITOS';
+					ROLLBACK;
+					
+				ELSEIF i_monto_pagar < total_pagar_alquileres THEN
+					
+					SET o_respuesta = 'EL MONTO QUE ESTA PAGANDO ES MENOR, PAGUE EL MONTO CORRESPONDIENTE';
+					ROLLBACK;
+				
+				END IF;
+			
+			ELSE
+			
+				SET o_respuesta = 'EL CLIENTE NO EXISTE O EL CLIENTE NO TIENE ALQUIERES DE EQUIPO';
+				ROLLBACK;
+			
+			END IF;
+		
+	END //
+
+DELIMITER ;
 
 
 # /////////////////////////////////////////////////////////////
@@ -682,6 +757,28 @@ CREATE TRIGGER rentmasterengine.tg_registrar_alquiler
 		
 		END IF;
 
+	END //
+	
+DELIMITER ;
+
+
+#DROP TRIGGER rentmasterengine.tg_actualizar_estado_del_equipo_al_pagar;
+DELIMITER //
+CREATE TRIGGER rentmasterengine.tg_actualizar_estado_del_equipo_al_pagar
+	BEFORE UPDATE
+	ON rentmasterengine.alquileres
+	FOR EACH ROW
+	
+	BEGIN
+				
+		IF NEW.total_pagar = 0.00 THEN
+			
+			UPDATE rentmasterengine.equipos
+			SET estado = 'DISPONIBLE'
+			WHERE id_equipo = NEW.id_equipo;
+			
+		END IF;
+		
 	END //
 	
 DELIMITER ;
