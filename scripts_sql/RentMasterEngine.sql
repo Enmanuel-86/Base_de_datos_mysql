@@ -130,6 +130,17 @@ CREATE VIEW rentmasterengine.vw_equipos_auditados_y_no_auditados AS
 		ON e.id_equipo = a.id_equipo
 	ORDER BY e.id_equipo ASC;
 
+# 8. VIEW PARA VER CUANTOS ALQUILERES TIENE EL CLIENTE Y CUANTO DEBE PAGAR
+CREATE VIEW rentmasterengine.vw_cant_alquieres_por_cliente AS
+	SELECT  c.nombre , COUNT(a.id_cliente) AS Cant_alquileres,
+			SUM(a.total_pagar) AS Total
+	FROM rentmasterengine.alquileres AS a 
+	INNER JOIN rentmasterengine.clientes AS c
+		ON c.id_cliente = a.id_cliente
+	WHERE a.estado_pago = 'NO PAGADO'
+	GROUP BY c.nombre
+	ORDER BY total DESC;
+
 
 
 		
