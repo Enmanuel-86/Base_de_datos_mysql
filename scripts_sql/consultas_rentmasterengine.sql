@@ -35,3 +35,20 @@ CALL rentmasterengine.sp_cancelar_alquileres_por_cliente_id_y_monto(7, 3200, @re
 SELECT @res;
 
 
+SELECT COUNT(*), categoria
+FROM rentmasterengine.equipos
+WHERE estado = 'DISPONIBLE'
+GROUP BY categoria ;
+
+
+CREATE USER 'Enmanuel'@'localhost' IDENTIFIED BY 'mario12';
+
+SELECT PASSWORD('mario_12');
+
+GRANT SELECT, UPDATE ON rentmasterengine.* TO 'Enmanuel'@'localhost';
+	
+FLUSH PRIVILEGES;
+
+
+
+
