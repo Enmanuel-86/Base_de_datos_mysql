@@ -46,3 +46,42 @@ CREATE TABLE sistema_atencion_clientes.atencion_cliente(
 
 
 
+-- CREACION DE STORED PROCEDURE
+
+
+DELIMITER //
+CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_cliente(
+    IN i_nombre VARCHAR(20),
+    IN i_apellido VARCHAR(20),
+    IN i_email VARCHAR(50),
+    OUT o_respuesta VARCHAR(40)
+)
+
+BEGIN
+
+    -- DECLARAMOS EL MANEJADOR DE ERRORES
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+
+    -- EN CASO DE FALLAR SE MOSTRAR EL MENSAJE DE ERROR
+    BEGIN
+        ROLLBACK;
+        SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
+    END;
+
+    -- COMIENZA LA TRANSACCION
+    START TRANSACTION;
+
+        -- SE REALIZA LA INSERCION 
+        INSERT INTO sistema_atencion_clientes.clientes (nombre, apellido, email)
+        VALUES (i_nombre, i_apellido, i_email);
+
+        -- GUARDAMOS LA RESPUESTA
+        SET o_respuesta = 'OPERACION REALIZADA CON EXITO';
+    
+    -- SI TODO SALE BIEN CONFIRMAMOS LOS CAMBIOS
+    COMMIT;
+
+-- FIN
+END //
+
+DELIMITER ;
