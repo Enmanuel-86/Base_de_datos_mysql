@@ -155,14 +155,16 @@ DELIMITER //
 DELIMITER ;
 
 -- STORED PROCEDURE PARA REGISTRAR LA ATENCION DEL CLIENTE
+-- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_espera_cliente_por_id;
 DELIMITER //
-    CREATE PROCEDURE sistema_atencion_cliente.sp_registrar_atencion_cliente_por_id(
+    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_espera_cliente_por_id(
         IN i_id_cliente INT UNSIGNED,
-        IN i_estado VARCHAR(15),
-        OUT o_respuesta VARCHAR(20)
+        OUT o_respuesta VARCHAR(50)
     )
 
     BEGIN
+
+        DECLARE existencia_cliente INT DEFAULT 0;
 
         DECLARE EXIT HANDLER FOR SQLEXCEPTION
         BEGIN
@@ -172,10 +174,26 @@ DELIMITER //
 
         START TRANSACTION;
 
-            INSERT INTO sistema_atencion_clientes.atencion_cliente (id_cliente, estado)
-            VALUES (i_id_cliente, i_estado);
+            SELECT COUNT(*)
+            INTO existencia_cliente
+            FROM sistema_atencion_clientes.clientes
+            WHERE id_cliente = i_id_cliente;
 
-        COMMIT;
+            IF existencia_cliente <> 0 THEN
+            
+                INSERT INTO sistema_atencion_clientes.en_espera_cliente (id_cliente)
+                VALUES (i_id_cliente);
+
+                SET o_respuesta = 'SE A REGISTRADO LA ESPERA CON EXITO';
+
+                COMMIT;
+
+            ELSE
+
+                ROLLBACK;
+                SET o_respuesta = 'EL CLIENTE NO EXISTE';
+
+            END IF;
 
     END //
 
