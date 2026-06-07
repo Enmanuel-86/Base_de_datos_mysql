@@ -28,20 +28,47 @@ CREATE TABLE sistema_atencion_clientes.empleados(
 );
 
 -- CREAMOS UNA TABLA PARA REGISTRAR LAS AUDITORIAS DEL SISTEMA (LA BASE DE DATOS)
+-- DROP TABLE sistema_atencion_clientes.auditoria;
 CREATE TABLE sistema_atencion_clientes.auditoria(
     id_auditoria INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT UNSIGNED,
     id_empleado INT UNSIGNED,
-    duracion TIME
-);
-
-CREATE TABLE sistema_atencion_clientes.atencion_cliente(
-    id_atencion_cliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    id_cliente INT UNSIGNED,
-    estado VARCHAR(15) DEFAULT 'EN ESPERA',
     fecha_atencion DATE,
     hora_comienzo TIME NOT NULL,
-    hora_final TIME DEFAULT NULL
+    hora_final TIME DEFAULT NULL,
+    duracion TIME,
+    FOREIGN KEY (id_cliente) REFERENCES sistema_atencion_clientes.clientes(id_cliente)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    FOREIGN KEY (id_empleado) REFERENCES sistema_atencion_clientes.empleados(id_empleado)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+-- DROP TABLE sistema_atencion_clientes.en_espera_cliente;
+CREATE TABLE sistema_atencion_clientes.en_espera_cliente(
+    id_espera_cliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT UNSIGNED,
+    estado VARCHAR(15) DEFAULT 'EN ESPERA',
+    FOREIGN KEY (id_cliente) REFERENCES sistema_atencion_clientes.clientes(id_cliente)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+CREATE TABLE sistema_atencion_clientes.atencion_al_cliente(
+    id_atencion_cliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT UNSIGNED,
+    id_empleado INT UNSIGNED,
+    fecha_atencion DATE,
+    hora_comienzo TIME NOT NULL,
+    FOREIGN KEY (id_cliente) REFERENCES sistema_atencion_clientes.clientes(id_cliente)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    FOREIGN KEY (id_empleado) REFERENCES sistema_atencion_clientes.empleados(id_empleado)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+
 );
 
 
@@ -49,78 +76,107 @@ CREATE TABLE sistema_atencion_clientes.atencion_cliente(
 -- CREACION DE STORED PROCEDURE
 
 -- STORE PROCEDURE PARA REGISTRAR A LOS CLIENTES
+-- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_cliente;
 DELIMITER //
-CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_cliente(
-    IN i_nombre VARCHAR(20),
-    IN i_apellido VARCHAR(20),
-    IN i_email VARCHAR(50),
-    OUT o_respuesta VARCHAR(40)
-)
+    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_cliente(
+        IN i_nombre VARCHAR(20),
+        IN i_apellido VARCHAR(20),
+        IN i_email VARCHAR(50),
+        OUT o_respuesta VARCHAR(40)
+    )
 
-BEGIN
-
-    -- DECLARAMOS EL MANEJADOR DE ERRORES
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-
-    -- EN CASO DE FALLAR SE MOSTRAR EL MENSAJE DE ERROR
     BEGIN
-        ROLLBACK;
-        SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
-    END;
 
-    -- COMIENZA LA TRANSACCION
-    START TRANSACTION;
+        -- DECLARAMOS EL MANEJADOR DE ERRORES
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
 
-        -- SE REALIZA LA INSERCION 
-        INSERT INTO sistema_atencion_clientes.clientes (nombre, apellido, email)
-        VALUES (i_nombre, i_apellido, i_email);
+        -- EN CASO DE FALLAR SE MOSTRAR EL MENSAJE DE ERROR
+        BEGIN
+            ROLLBACK;
+            SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
+        END;
 
-        -- GUARDAMOS LA RESPUESTA
-        SET o_respuesta = 'OPERACION REALIZADA CON EXITO';
-    
-    -- SI TODO SALE BIEN CONFIRMAMOS LOS CAMBIOS
-    COMMIT;
+        -- COMIENZA LA TRANSACCION
+        START TRANSACTION;
 
--- FIN
-END //
+            -- SE REALIZA LA INSERCION 
+            INSERT INTO sistema_atencion_clientes.clientes (nombre, apellido, email)
+            VALUES (UPPER(i_nombre), UPPER(i_apellido), UPPER(i_email));
+
+            -- GUARDAMOS LA RESPUESTA
+            SET o_respuesta = 'OPERACION REALIZADA CON EXITO';
+        
+        -- SI TODO SALE BIEN CONFIRMAMOS LOS CAMBIOS
+        COMMIT;
+
+    -- FIN
+    END //
 
 DELIMITER ;
 
 
 -- STORED PROCEDURE PARA REGISTRAR A LOS EMPLEADOS
+-- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_empleado;
 DELIMITER //
-CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_empleado(
-    IN i_nombre VARCHAR(20),
-    IN i_apellido VARCHAR(20),
-    IN i_email VARCHAR(50),
-    OUT o_respuesta VARCHAR(40)
-)
+    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_empleado(
+        IN i_nombre VARCHAR(20),
+        IN i_apellido VARCHAR(20),
+        IN i_email VARCHAR(50),
+        OUT o_respuesta VARCHAR(40)
+    )
 
-BEGIN
-
-    -- DECLARAMOS EL MANEJADOR DE ERRORES
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-
-    -- EN CASO DE FALLAR SE MOSTRAR EL MENSAJE DE ERROR
     BEGIN
-        ROLLBACK;
-        SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
-    END;
 
-    -- COMIENZA LA TRANSACCION
-    START TRANSACTION;
+        -- DECLARAMOS EL MANEJADOR DE ERRORES
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
 
-        -- SE REALIZA LA INSERCION 
-        INSERT INTO sistema_atencion_clientes.empleados (nombre, apellido, email)
-        VALUES (i_nombre, i_apellido, i_email);
+        -- EN CASO DE FALLAR SE MOSTRAR EL MENSAJE DE ERROR
+        BEGIN
+            ROLLBACK;
+            SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
+        END;
 
-        -- GUARDAMOS LA RESPUESTA
-        SET o_respuesta = 'OPERACION REALIZADA CON EXITO';
-    
-    -- SI TODO SALE BIEN CONFIRMAMOS LOS CAMBIOS
-    COMMIT;
+        -- COMIENZA LA TRANSACCION
+        START TRANSACTION;
 
--- FIN
-END //
+            -- SE REALIZA LA INSERCION 
+            INSERT INTO sistema_atencion_clientes.empleados (nombre, apellido, email)
+            VALUES (UPPER(i_nombre), UPPER(i_apellido), UPPER(i_email));
+
+            -- GUARDAMOS LA RESPUESTA
+            SET o_respuesta = 'OPERACION REALIZADA CON EXITO';
+        
+        -- SI TODO SALE BIEN CONFIRMAMOS LOS CAMBIOS
+        COMMIT;
+
+    -- FIN
+    END //
 
 DELIMITER ;
+
+-- STORED PROCEDURE PARA REGISTRAR LA ATENCION DEL CLIENTE
+DELIMITER //
+    CREATE PROCEDURE sistema_atencion_cliente.sp_registrar_atencion_cliente_por_id(
+        IN i_id_cliente INT UNSIGNED,
+        IN i_estado VARCHAR(15),
+        OUT o_respuesta VARCHAR(20)
+    )
+
+    BEGIN
+
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
+        END;
+
+        START TRANSACTION;
+
+            INSERT INTO sistema_atencion_clientes.atencion_cliente (id_cliente, estado)
+            VALUES (i_id_cliente, i_estado);
+
+        COMMIT;
+
+    END //
+
+DELIMITER;
