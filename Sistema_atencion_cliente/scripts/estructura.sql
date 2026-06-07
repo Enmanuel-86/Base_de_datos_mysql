@@ -44,3 +44,5 @@ CREATE TABLE sistema_atencion_clientes.atencion_cliente(
     hora_final TIME DEFAULT NULL
 );
 
+
+
