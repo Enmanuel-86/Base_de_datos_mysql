@@ -12,6 +12,13 @@ CALL sistema_atencion_clientes.sp_registrar_espera_cliente_por_id(1, @respuesta)
 
 TRUNCATE sistema_atencion_clientes.clientes;
 TRUNCATE sistema_atencion_clientes.empleados;
+TRUNCATE sistema_atencion_clientes.en_espera_cliente;
+TRUNCATE sistema_atencion_clientes.atencion_al_cliente;
 
-INSERT INTO sistema_atencion_clientes.atencion_al_cliente (id_empleado, id_cliente, hora_comienzo, fecha_atencion)
-VALUES (1, 1,CURRENT_TIME(), CURRENT_DATE());
+
+SELECT TIMEDIFF(CURRENT_TIME(), '05:10:00') as duracion;
+
+
+
+CALL sistema_atencion_clientes.sp_registrar_espera_cliente_por_id(1, @respuesta);
+CALL sistema_atencion_clientes.sp_registrar_atencion_cliente_por_id(1, 1, @respuesta);
