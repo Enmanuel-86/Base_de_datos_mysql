@@ -198,3 +198,69 @@ DELIMITER //
     END //
 
 DELIMITER;
+
+
+DELIMITER ;
+
+-- STORED PROCEDURE PARA REGISTRAR LA ATENCION AL CLIENTE
+-- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_cliente_por_id;
+DELIMITER //
+    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_cliente_por_id(
+        IN i_id_cliente INT UNSIGNED,
+        IN i_id_empleado INT UNSIGNED,
+        OUT o_respuesta VARCHAR(50)
+    )
+
+    BEGIN
+
+        DECLARE existencia_cliente INT DEFAULT 0;
+        DECLARE existencia_empleado INT DEFAULT 0;
+        DECLARE estado_cliente INT DEFAULT 0;
+
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
+        END;
+
+        START TRANSACTION;
+
+            SELECT COUNT(*)
+            INTO existencia_cliente
+            FROM sistema_atencion_clientes.clientes
+            WHERE id_cliente = i_id_cliente;
+
+            SELECT COUNT(*)
+            INTO existencia_empleado
+            FROM sistema_atencion_clientes.empleados
+            WHERE id_empleado = i_id_empleado;
+
+            SELECT COUNT(*)
+            INTO estado_cliente
+            FROM sistema_atencion_clientes.en_espera_cliente
+            WHERE id_cliente = i_id_cliente AND estado = 'EN ESPERA';
+
+
+
+            IF existencia_cliente <> 0 AND existencia_empleado <> 0 AND estado_cliente <> 0 THEN
+
+
+                INSERT INTO sistema_atencion_clientes.atencion_al_cliente (id_empleado, id_cliente, fecha_atencion, hora_comienzo)
+                VALUES (i_id_empleado, i_id_cliente, CURRENT_DATE(), CURRENT_TIME());
+
+                UPDATE sistema_atencion_clientes.en_espera_cliente 
+                SET estado = 'ATENDIENDO'
+                WHERE id_cliente = i_id_cliente;
+
+                COMMIT;
+
+            ELSE
+                ROLLBACK;
+                SET o_respuesta = 'NO CUMPLE LA CONDICION';
+
+            END IF;
+
+
+    END //
+
+DELIMITER ;
