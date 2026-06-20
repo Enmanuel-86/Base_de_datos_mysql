@@ -7,6 +7,7 @@
 
 -- CREAMOS LA BASE DE DATOS SI NO EXISTE
 CREATE DATABASE IF NOT EXISTS sistema_atencion_clientes;
+-- DROP DATABASE sistema_atencion_clientes;
 
 -- UTILIZAMOS LA BASE DE DATOS
 USE sistema_atencion_clientes;
@@ -163,30 +164,59 @@ DELIMITER //
     )
 
     BEGIN
-
+		
+	    -- variable para verificar la existencia del cliente
         DECLARE existencia_cliente INT DEFAULT 0;
+	    DECLARE existencia_cliente_en_espera INT DEFAULT 0;
 
+	    -- manejador de errores
         DECLARE EXIT HANDLER FOR SQLEXCEPTION
         BEGIN
             ROLLBACK;
             SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
         END;
 
+	    -- comenzamos la transaccion
         START TRANSACTION;
-
+			
+	    	-- Realizamos la consulta del cliente para verificar que existe
             SELECT COUNT(*)
             INTO existencia_cliente
             FROM sistema_atencion_clientes.clientes
             WHERE id_cliente = i_id_cliente;
+	    	
+	    	-- Realizamos la consulta para ver si el cliente ya esta en la espera
+	    	SELECT COUNT(*)
+            INTO existencia_cliente_en_espera
+            FROM sistema_atencion_clientes.en_espera_cliente
+            WHERE id_cliente = i_id_cliente;
+	    	
+	    	
 
+	    	-- la condicion es que si la variable para verificar la existencia del cliente
+	    	-- es distinto de 0 eso signifa que el cliente existe
             IF existencia_cliente <> 0 THEN
             
-                INSERT INTO sistema_atencion_clientes.en_espera_cliente (id_cliente)
-                VALUES (i_id_cliente);
+            	-- verificamos si el cliente esta en la lista de espera
+            	-- en caso de estar en la li
+            	IF existencia_cliente_en_espera == 0 THEN
+            		
+            		-- Registramos al cliente en la tabla de espera
+	                INSERT INTO sistema_atencion_clientes.en_espera_cliente (id_cliente)
+	                VALUES (i_id_cliente);
+	
+	                SET o_respuesta = 'SE A REGISTRADO LA ESPERA CON EXITO';
 
-                SET o_respuesta = 'SE A REGISTRADO LA ESPERA CON EXITO';
-
-                COMMIT;
+                	COMMIT;
+            	
+            	ELSE
+            		
+            		ROLLBACK;
+            		SET o_respuesta = 'EL CLIENTE YA ESTA EN LA COLA DE ESPERA';
+            	
+            	END IF;
+            
+            	
 
             ELSE
 
@@ -196,11 +226,11 @@ DELIMITER //
             END IF;
 
     END //
-
-DELIMITER;
-
-
+    
 DELIMITER ;
+
+
+
 
 -- STORED PROCEDURE PARA REGISTRAR LA ATENCION AL CLIENTE
 -- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_cliente_por_id;
