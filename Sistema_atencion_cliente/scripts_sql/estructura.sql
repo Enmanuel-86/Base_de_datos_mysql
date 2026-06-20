@@ -198,8 +198,9 @@ DELIMITER //
             IF existencia_cliente <> 0 THEN
             
             	-- verificamos si el cliente esta en la lista de espera
-            	-- en caso de estar en la li
-            	IF existencia_cliente_en_espera == 0 THEN
+            	-- en caso de estar en la lista de espera no lo volvemos a registrar
+            	-- caso contrario lo registramos
+            	IF existencia_cliente_en_espera = 0 THEN
             		
             		-- Registramos al cliente en la tabla de espera
 	                INSERT INTO sistema_atencion_clientes.en_espera_cliente (id_cliente)
