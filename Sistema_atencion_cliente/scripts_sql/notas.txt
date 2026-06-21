@@ -1,0 +1,15 @@
+Archivo de texto para anotar que tenemos en esta base de datos.
+
+1. Estrutura de la base de datos:
+	- Creacion de base de datos
+	- Tabla de empleados y clientes
+	- Tabla de auditoria
+	- Tabla de espera del cliente
+	- Tabla para la atencion al cliente
+	- SP para registrar clientes y empleados
+	- SP para registrar al cliente en la cola de espera
+	- SP para registrar atencion  al cliente
+	
+2. Inserción de datos:
+	- Inserts de clientes y empleados
+ 
