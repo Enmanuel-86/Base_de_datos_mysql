@@ -243,19 +243,25 @@ DELIMITER //
     )
 
     BEGIN
-
+		
+	    -- Variables para verificar el estado del cliente y del empleado
         DECLARE existencia_cliente INT DEFAULT 0;
         DECLARE existencia_empleado INT DEFAULT 0;
+	    
+	    -- Variable para verificar el estado del cliente 
         DECLARE estado_cliente INT DEFAULT 0;
 
+	    -- Manejador de errores
         DECLARE EXIT HANDLER FOR SQLEXCEPTION
         BEGIN
             ROLLBACK;
             SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
         END;
-
+	
+	    -- Inicia la transaccion
         START TRANSACTION;
-
+			
+	    	-- Consultas para verificar la existencia y el estado del cliente
             SELECT COUNT(*)
             INTO existencia_cliente
             FROM sistema_atencion_clientes.clientes
@@ -272,16 +278,21 @@ DELIMITER //
             WHERE id_cliente = i_id_cliente AND estado = 'EN ESPERA';
 
 
-
+			-- La condicion es que si el cliente existe y si esta en estado de espera
+            -- y que el empleado exista
+            -- En caso de ser verdadero se registrar la atencion del cliente
             IF existencia_cliente <> 0 AND existencia_empleado <> 0 AND estado_cliente <> 0 THEN
 
-
+				-- registramos la atencion del cliente con los ID
                 INSERT INTO sistema_atencion_clientes.atencion_al_cliente (id_empleado, id_cliente, fecha_atencion, hora_comienzo)
                 VALUES (i_id_empleado, i_id_cliente, CURRENT_DATE(), CURRENT_TIME());
-
+				
+				-- actualizamos el estado del cliente en Atendiendo
                 UPDATE sistema_atencion_clientes.en_espera_cliente 
                 SET estado = 'ATENDIENDO'
                 WHERE id_cliente = i_id_cliente;
+				
+				SET o_respuesta = 'ATENCION REGISTRADA CON EXITO';
 
                 COMMIT;
 
@@ -295,3 +306,84 @@ DELIMITER //
     END //
 
 DELIMITER ;
+
+
+-- STORED PROCEDURE PARA CULMINAR LA ATENCION AL CLIENTE Y REGISTARLO EN LA AUDITORIA
+-- DROP PROCEDURE sistema_atencion_clientes.sp_finalizar_atencion_cliente;
+DELIMITER //
+CREATE PROCEDURE sistema_atencion_clientes.sp_finalizar_atencion_cliente(
+	IN i_id_cliente INT UNSIGNED,
+	OUT o_respuesta VARCHAR(50)
+)
+BEGIN
+	
+	-- Variable para verificar que el cliente esta en la tabla de atencion al cliente
+	DECLARE existe_cliente INT DEFAULT 0;
+	
+	
+	DECLARE var_id_empleado INT UNSIGNED;
+	DECLARE var_fecha_atencion DATE;
+    DECLARE var_hora_comienzo TIME ;
+    DECLARE var_hora_final TIME ;
+    DECLARE var_duracion TIME;
+	
+	-- Manejador de errores
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET o_respuesta = 'NO SE A PODIDO REALIZAR LA OPERACION';
+    END;
+	
+	-- Comenzamos la transaccion 
+	START TRANSACTION;
+	
+	-- Consulta para verificar que el cliente este en la tabla de atencion al cliente
+	SELECT COUNT(*)
+	INTO existe_cliente
+	FROM sistema_atencion_clientes.atencion_al_cliente
+	WHERE id_cliente = i_id_cliente;
+	
+	IF existe_cliente <> 0 THEN
+		
+		-- Actualizamos el estado del cliente en la lista de espera
+		DELETE FROM sistema_atencion_clientes.en_espera_cliente
+		WHERE id_cliente = i_id_cliente;
+		
+		
+		SELECT id_empleado, fecha_atencion, hora_comienzo
+		INTO var_id_empleado, var_fecha_atencion, var_hora_comienzo
+		FROM sistema_atencion_clientes.atencion_al_cliente
+		WHERE id_cliente = i_id_cliente;
+		
+		
+		INSERT INTO sistema_atencion_clientes.auditoria(id_cliente,
+													    id_empleado,
+													    fecha_atencion,
+													    hora_comienzo,
+													    hora_final,
+													    duracion)
+		VALUES (i_id_cliente, var_id_empleado, var_fecha_atencion, var_hora_comienzo,
+				CURRENT_TIME(), TIMEDIFF(CURRENT_TIME(), var_hora_comienzo ));
+		
+		DELETE FROM sistema_atencion_clientes.atencion_al_cliente 
+		WHERE id_cliente = i_id_cliente;
+		
+		SET o_respuesta = 'FINALIZACION REALIZADA CON EXITO';
+		
+		COMMIT;
+	
+	ELSE
+	
+		ROLLBACK;
+		SET o_respuesta = 'ESTE CLIENTE NO ESTA SIENDO ATENDIDO';
+		
+	END IF;
+	
+	
+	
+END //
+
+DELIMITER ;
+
+
+
