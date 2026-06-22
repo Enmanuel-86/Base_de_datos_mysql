@@ -1,5 +1,14 @@
 -- REALIZANDO INSERCION DE DATOS
 
+/*
+
+	PARA LOS EMPLEADOS Y CLIENTES SIMPLEMENTE ES:
+	- NOMBRE
+	- APELLIDO
+	- CORREO/EMAIL
+
+*/
+
 -- REGISTRANDO CLIENTES
 CALL sistema_atencion_clientes.sp_registrar_cliente('Juan', 'Pérez', 'juan.perez@email.com', @respuesta);
 CALL sistema_atencion_clientes.sp_registrar_cliente('María', 'Gómez', 'maria.gomez@email.com', @respuesta);
