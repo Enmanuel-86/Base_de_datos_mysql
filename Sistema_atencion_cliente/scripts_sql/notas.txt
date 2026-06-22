@@ -9,7 +9,10 @@ Archivo de texto para anotar que tenemos en esta base de datos.
 	- SP para registrar clientes y empleados
 	- SP para registrar al cliente en la cola de espera
 	- SP para registrar atencion  al cliente
-	- SP para culminar la atencion del cliente y registrarlo en la auditoria	
+	- SP para culminar la atencion del cliente y registrarlo en la auditoria
+	- VW para ver la atencion de los clientes
+	- VW para ver la auditoria
+	- VW para ver la lista de espera de los clientes
 2. Inserción de datos:
 	- Inserts de clientes y empleados
  
