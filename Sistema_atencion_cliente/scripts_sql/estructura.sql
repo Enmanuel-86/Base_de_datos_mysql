@@ -72,6 +72,51 @@ CREATE TABLE sistema_atencion_clientes.atencion_al_cliente(
 
 );
 
+-- CREACION DE VIEWS/VISTAS
+
+-- VIEW PARA VER A LOS CLIENTES EN ESPERA
+CREATE VIEW sistema_atencion_clientes.vw_clientes_en_espera AS
+	SELECT ec.id_espera_cliente ,c.nombre, c.apellido, ec.estado 
+	FROM sistema_atencion_clientes.en_espera_cliente AS ec
+	INNER JOIN sistema_atencion_clientes.clientes AS c
+		ON c.id_cliente = ec.id_cliente; 
+
+
+-- VIEW PARA VER A LOS CLIENTES QUE SE ESTAN ATENDIENDO
+-- HICE DOS VERSIONES LA PRIMERA ES PARA REALIZAR CONSULTAS MAS ESTRUCTURADAS
+-- Y LA SEGUNDA ES PARA VERLO UN POCO MAS RESUMIDA
+CREATE VIEW sistema_atencion_clientes.vw_atencion_al_cliente AS
+	SELECT ac.id_atencion_cliente, c.nombre AS nombre_cliente, c.apellido AS apellido_cliente, 
+		   e.nombre AS nombre_empleado, e.apellido AS apellido_empleado, ac.fecha_atencion,
+		   ac.hora_comienzo 
+	FROM sistema_atencion_clientes.atencion_al_cliente ac
+	INNER JOIN sistema_atencion_clientes.clientes AS c
+		ON c.id_cliente = ac.id_cliente 
+	INNER JOIN sistema_atencion_clientes.empleados AS e
+		ON e.id_empleado = ac.id_empleado ;
+
+CREATE VIEW sistema_atencion_clientes.vw_atencion_al_cliente_resumen AS
+	SELECT ac.id_atencion_cliente, CONCAT(c.nombre, ' ',c.apellido) AS Cliente, 
+		   CONCAT(e.nombre, ' ', e.apellido) AS Empleado, ac.fecha_atencion,
+		   ac.hora_comienzo 
+	FROM sistema_atencion_clientes.atencion_al_cliente ac
+	INNER JOIN sistema_atencion_clientes.clientes AS c
+		ON c.id_cliente = ac.id_cliente 
+	INNER JOIN sistema_atencion_clientes.empleados AS e
+		ON e.id_empleado = ac.id_empleado ;
+
+-- VIEW PARA VER LA AUDITORIA
+CREATE VIEW sistema_atencion_clientes.vw_auditoria AS
+	SELECT a.id_auditoria , c.nombre AS nombre_cliente, c.apellido AS apellido_cliente, 
+		   e.nombre AS nombre_empleado, e.apellido AS apellido_empleado, a.fecha_atencion, 
+		   a.hora_comienzo, a.hora_final, a.duracion  
+	FROM sistema_atencion_clientes.auditoria AS a 
+	INNER JOIN sistema_atencion_clientes.clientes AS c
+		ON c.id_cliente = a.id_cliente 
+	INNER JOIN sistema_atencion_clientes.empleados AS e
+		ON e.id_empleado = a.id_empleado ;
+
+
 
 
 -- CREACION DE STORED PROCEDURE
@@ -156,9 +201,9 @@ DELIMITER //
 DELIMITER ;
 
 -- STORED PROCEDURE PARA REGISTRAR LA ATENCION DEL CLIENTE
--- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_espera_cliente_por_id;
+-- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_espera_con_cliente_id;
 DELIMITER //
-    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_espera_cliente_por_id(
+    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_espera_con_cliente_id(
         IN i_id_cliente INT UNSIGNED,
         OUT o_respuesta VARCHAR(50)
     )
@@ -234,9 +279,9 @@ DELIMITER ;
 
 
 -- STORED PROCEDURE PARA REGISTRAR LA ATENCION AL CLIENTE
--- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_cliente_por_id;
+-- DROP PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_von_cliente_y_empleado_id;
 DELIMITER //
-    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_cliente_por_id(
+    CREATE PROCEDURE sistema_atencion_clientes.sp_registrar_atencion_con_cliente_y_empleado_id(
         IN i_id_cliente INT UNSIGNED,
         IN i_id_empleado INT UNSIGNED,
         OUT o_respuesta VARCHAR(50)
@@ -309,9 +354,9 @@ DELIMITER ;
 
 
 -- STORED PROCEDURE PARA CULMINAR LA ATENCION AL CLIENTE Y REGISTARLO EN LA AUDITORIA
--- DROP PROCEDURE sistema_atencion_clientes.sp_finalizar_atencion_cliente;
+-- DROP PROCEDURE sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id;
 DELIMITER //
-CREATE PROCEDURE sistema_atencion_clientes.sp_finalizar_atencion_cliente(
+CREATE PROCEDURE sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id(
 	IN i_id_cliente INT UNSIGNED,
 	OUT o_respuesta VARCHAR(50)
 )
