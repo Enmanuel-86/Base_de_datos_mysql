@@ -18,7 +18,7 @@ CREATE TABLE sistema_atencion_clientes.clientes(
     nombre VARCHAR(20) NOT NULL,
     apellido VARCHAR(20) NOT NULL,
     email VARCHAR(50) NOT NULL UNIQUE
-);
+)ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- CREAMOS UNA TABLA DE LOS EMPLEADOS QUE ATENDERAN A LOS CLIENTES
 CREATE TABLE sistema_atencion_clientes.empleados(
@@ -26,7 +26,7 @@ CREATE TABLE sistema_atencion_clientes.empleados(
     nombre VARCHAR(20) NOT NULL,
     apellido VARCHAR(20) NOT NULL,
     email VARCHAR(50) NOT NULL UNIQUE
-);
+)ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- CREAMOS UNA TABLA PARA REGISTRAR LAS AUDITORIAS DEL SISTEMA (LA BASE DE DATOS)
 -- DROP TABLE sistema_atencion_clientes.auditoria;
@@ -44,7 +44,7 @@ CREATE TABLE sistema_atencion_clientes.auditoria(
     FOREIGN KEY (id_empleado) REFERENCES sistema_atencion_clientes.empleados(id_empleado)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-);
+)ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- DROP TABLE sistema_atencion_clientes.en_espera_cliente;
 CREATE TABLE sistema_atencion_clientes.en_espera_cliente(
@@ -54,9 +54,9 @@ CREATE TABLE sistema_atencion_clientes.en_espera_cliente(
     FOREIGN KEY (id_cliente) REFERENCES sistema_atencion_clientes.clientes(id_cliente)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-);
+)ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-
+-- DROP TABLE sistema_atencion_clientes.atencion_al_cliente;
 CREATE TABLE sistema_atencion_clientes.atencion_al_cliente(
     id_atencion_cliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT UNSIGNED,
@@ -69,8 +69,7 @@ CREATE TABLE sistema_atencion_clientes.atencion_al_cliente(
     FOREIGN KEY (id_empleado) REFERENCES sistema_atencion_clientes.empleados(id_empleado)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-
-);
+)ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- CREACION DE VIEWS/VISTAS
 

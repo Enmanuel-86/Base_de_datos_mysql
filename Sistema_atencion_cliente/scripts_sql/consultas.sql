@@ -31,9 +31,17 @@ SELECT @res;
 -- 2. Atender al cliente (id_cliente, id_empleado)
 CALL sistema_atencion_clientes.sp_registrar_atencion_con_cliente_y_empleado_id(1, 2, @res);
 CALL sistema_atencion_clientes.sp_registrar_atencion_con_cliente_y_empleado_id(2, 1, @res);
+CALL sistema_atencion_clientes.sp_registrar_atencion_con_cliente_y_empleado_id(3, 2, @res);
+CALL sistema_atencion_clientes.sp_registrar_atencion_con_cliente_y_empleado_id(4, 1, @res);
+CALL sistema_atencion_clientes.sp_registrar_atencion_con_cliente_y_empleado_id(5
+, 1, @res);
 SELECT @res;
 
 -- 3. Finalizar la atencion al cliente y registrar la auditoria (id_cliente)
 CALL sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id(1, @res);
 CALL sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id(2, @res);
+CALL sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id(3, @res);
+CALL sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id(4, @res);
+CALL sistema_atencion_clientes.sp_finalizar_atencion_con_cliente_id(5, @res);
+
 SELECT @res;
